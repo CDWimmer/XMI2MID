@@ -39,6 +39,15 @@
 #include <cstdint>
 #include <iostream>
 
+#if defined(_MSC_VER)
+    #include <intrin.h>
+    #define bswap32 _byteswap_ulong
+    #define bswap16 _byteswap_ushort
+#else
+    #define bswap32 __builtin_bswap32
+    #define bswap16 __builtin_bswap16
+#endif
+
 std::vector<uint8_t> xmiConverter(const std::vector<uint8_t> &xmi)
 {
     //
@@ -135,7 +144,7 @@ std::vector<uint8_t> xmiConverter(const std::vector<uint8_t> &xmi)
     // XMI Header, Branch skip
     //
     it += 4 * 12 + 2;
-    uint32_t lTIMB = _byteswap_ulong(*reinterpret_cast<const uint32_t *>(&*it));
+    uint32_t lTIMB = bswap32(*reinterpret_cast<const uint32_t *>(&*it));
     it += 4 + lTIMB;
 
     if (std::equal(it, it + 4, "RBRN"))
@@ -146,7 +155,7 @@ std::vector<uint8_t> xmiConverter(const std::vector<uint8_t> &xmi)
     }
 
     it += 4;
-    uint32_t lEVNT = _byteswap_ulong(*reinterpret_cast<const uint32_t *>(&*it));
+    uint32_t lEVNT = bswap32(*reinterpret_cast<const uint32_t *>(&*it));
     it += 4;
 
     //
@@ -356,13 +365,13 @@ std::vector<uint8_t> xmiConverter(const std::vector<uint8_t> &xmi)
     //
     std::vector<uint8_t> midiData;
     auto header = midiHeader;
-    uint16_t swappedTimebase = _byteswap_ushort(timebase);
+    uint16_t swappedTimebase = bswap16(timebase);
     header[12] = static_cast<uint8_t>(swappedTimebase & 0xFF);
     header[13] = static_cast<uint8_t>(swappedTimebase >> 8);
 
     midiData.insert(midiData.end(), header.begin(), header.end());
     uint32_t trackLen = static_cast<uint32_t>(std::distance(midiWrite.begin(), writeIt));
-    uint32_t swappedTrackLen = _byteswap_ulong(trackLen);
+    uint32_t swappedTrackLen = bswap32(trackLen);
     midiData.insert(midiData.end(), reinterpret_cast<uint8_t *>(&swappedTrackLen), reinterpret_cast<uint8_t *>(&swappedTrackLen) + 4);
     midiData.insert(midiData.end(), midiWrite.begin(), writeIt);
 
